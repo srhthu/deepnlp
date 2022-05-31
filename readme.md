@@ -1,5 +1,5 @@
 # Introduction
-Deepnlp is a pytorch based deep learning library for NLP. It provides with off-the-shell commonly used class/function for deep learning.
+`Deepnlp` is a pytorch based deep learning library for NLP. It provides off-the-shelf commonly used classes/functions for training a deep learning model.
 
 # Main Modules
 ## nn_modules
@@ -81,15 +81,16 @@ train_one_epoch(
 )
 ```
 ## trainer
-`trainer` provides with a simplified `transformers.Trainer` class for more complex training controls, e.g., log, evaluate, checkpoint save and early stop. In the future, the function `train_multiple_epochs` are expected to support all these features of `trainer`
+`trainer` provides with a simplified `transformers.Trainer` class for multiple training controls, e.g., log, evaluate, checkpoint save and early stop.   
+The function `train_multiple_epochs` are expected to support all these features of `trainer` in future.
 
 ## uitls
-`utils` includes useful and compact api for I/O, pytorch, numpy, et al.. It also has some toolkits for logging and tokenization.  
+`utils` includes useful and compact api for I/O, pytorch, numpy ... It also has toolkits for logging and tokenization.  
 For example, you can read a json dataset by
 ```
 deepnlp.utils.read_json_line(filename, n_lines)
 ```
-which returns a `List[dict]` dataset.
+which returns a `List[dict]` dataset and can only read first `n_lines` during debug.
 
 ## data
-`data` implements a torch Dataset class `UniversalDataset` which support multiple types of initialization.
+`data` implements a torch Dataset class `UniversalDataset` supporting multiple types of input (list or dict samples).
