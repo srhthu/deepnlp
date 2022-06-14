@@ -8,7 +8,7 @@ import os
 import sys
 import json
 from collections import OrderedDict
-from pandas import read_json
+
 import pickle
 from typing import List
 
