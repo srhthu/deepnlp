@@ -231,23 +231,25 @@ class Sent2SeqVec_Bert(Sent2SeqVec):
     def __init__(self,
         bert_path: str,
         num_layers: int,
-        bert_config: Optional[PretrainedConfig] = None
+        bert_config: Optional[PretrainedConfig] = None,
+        load_pretrain = True
     ):
         super().__init__()
 
-        bert_pretrain = BertModel.from_pretrained(bert_path)
         if bert_config is None:
             cfg_dt, cfg_kws = BertConfig.get_config_dict(bert_path)
             cfg_dt['num_hidden_layers'] = num_layers
             bert_config = BertConfig(**cfg_dt, **cfg_kws)
         
         self.bert = BertModel(bert_config)
-        self.bert.load_state_dict(bert_pretrain.state_dict(), strict = False)
+        if load_pretrain:
+            bert_pretrain = BertModel.from_pretrained(bert_path)
+            self.bert.load_state_dict(bert_pretrain.state_dict(), strict = False)
 
     def forward(self, input_ids, attention_mask = None, token_type_ids = None):
         bert_out = self.bert(input_ids, attention_mask, token_type_ids)
         
-        return bert_out
+        return bert_out[0]  # change. only need the output sequence
     
     def get_output_dim(self):
         return self.bert.config.hidden_size 
