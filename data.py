@@ -15,8 +15,9 @@ from typing import List
 from torch.utils.data import Dataset
 from transformers import AutoTokenizer, PreTrainedTokenizer
 
-from .utils import read_json_line, zip_dict
+from .utils import read_json_line, zip_dict, swap_dict_key
 
+from typing import Dict
 
 # =========== Dataset Classes ===========
 class UniversalDataset(Dataset):
@@ -35,7 +36,7 @@ class UniversalDataset(Dataset):
     def __init__(self, *args, **kwargs):
         self.dataset = None
         self._sample_type = None # 0: list; 1: dict
-        self.key_mapping = None
+        self.key_mapping = None  # do not change original data. Like a new view.
         
         if len(args) == 0 and len(kwargs) == 0:
             raise ValueError('No arguments found.')
@@ -51,6 +52,14 @@ class UniversalDataset(Dataset):
             self.dataset = zip_dict(**kwargs)
         else:
             raise ValueError('Arguments should be either positional or key words.')
+
+    def change_key_name(self, old_new_map: Dict[str, str]):
+        """
+        Change the original data
+        """
+        assert self._sample_type == 1
+        for i in range(len(self)):
+            self.dataset[i] = swap_dict_key(self.dataset[i], old_new_map)
 
     def decorate(self, sample):
         """

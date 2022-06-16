@@ -27,6 +27,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim
+from torch.utils.tensorboard import SummaryWriter
+
 from torch.utils.data import Dataset, DataLoader
 from transformers.data.data_collator import default_data_collator
 from transformers.optimization import (
@@ -40,7 +42,7 @@ from ..trainer import trainer_utils
 OPTIMIZER: Dict[str, torch.optim.Optimizer] = {
     'sgd': torch.optim.SGD,
     'adam': torch.optim.Adam,
-    'adamw': AdamW,
+    'adamw': torch.optim.AdamW,
 }
 
 
@@ -115,7 +117,8 @@ def train_one_epoch(
     lr_scheduler = None,
     global_step = 0,
     logger = None,
-    show_bar = False
+    show_bar = False,
+    tb_writer: Optional[SummaryWriter] = None
 ):
     """
     For training one epoch, the lr_scheduler can be none.
@@ -179,6 +182,9 @@ def train_one_epoch(
             net.zero_grad()
             if ((global_step+1) // acc_step) % training_args.logging_steps == 0:
                 logs = step_ave.average()
+                if tb_writer is not None:
+                    for name, value in logs.items():
+                        tb_writer.add_scalar(f'train/{name}', value, (global_step+1) // acc_step)
                 duration = time.time() - timestamp
                 logs['time'] = f'{duration:.2f}s'
                 pct = (i+1) / len(dl) * 100
@@ -195,10 +201,15 @@ def train_one_epoch(
 
 def train_multiple_epochs(args, model, train_dataset, dev_dataset, compute_loss,
     eval_feed_fn, eval_metric_fn,
-    logger = None, show_bar = True):
+    logger = None, show_bar = True, to_tensorboard = True):
     if logger is None:
         logger = utils.Logger(False)
     
+    if args['output_dir'] is not None:
+        writer = SummaryWriter(os.path.join(args['output_dir'], 'tb'))
+    else:
+        writer = None
+
     batch_size = args['batch_size']
     logging_steps = args['logging_steps']
     optim_name = args['optim_name']
@@ -211,6 +222,8 @@ def train_multiple_epochs(args, model, train_dataset, dev_dataset, compute_loss,
     early_stop_patience = args['early_stop_patience']
 
     train_args = TrainingArgumentsForLoop(batch_size = batch_size, logging_steps = logging_steps)
+    logger.info(repr(train_args.__dict__))
+
     optimizer = OPTIMIZER[optim_name.lower()](
         model.parameters(),
         lr = lr
@@ -226,27 +239,36 @@ def train_multiple_epochs(args, model, train_dataset, dev_dataset, compute_loss,
     for epi in range(num_epoch):
         # train
         logger.info(f'[Epoch {epi + 1} Start]')
-        logs, global_step = train_one_epoch(model, train_args, train_dataset, compute_loss, 
-            optimizer, lr_scheduler, global_step = global_step, logger = logger)
+        logs, global_step = train_one_epoch(
+            model, train_args, train_dataset, compute_loss, 
+            optimizer, lr_scheduler, global_step = global_step, 
+            logger = logger, tb_writer = writer)
         logger.info(f'[Epoch {epi + 1} End] {utils.obj_to_str(logs)}')
         # evaluate
         outputs = do_predict(model, TrainingArgumentsForLoop(eval_batch_size),
                 dev_dataset, eval_feed_fn, show_bar = show_bar)
         metrics = eval_metric_fn(outputs)
-        logger.info(f'[Eval {epi + 1}] {utils.obj_to_str(metrics)}')
+        msg = f'[Eval {epi + 1}] {utils.obj_to_str(metrics)}'
+        logger.info(msg, dump = True)
+        if writer is not None:
+            for name, value in metrics.items():
+                writer.add_scalar(f'eval/{name}', value, epi + 1)
 
-        if early_stop:
-            es_metric = metrics[early_stop_metric]
-            if es_metric > best_metric:
-                logger.info(f'New best metric {epi + 1}')
-                best_metric = es_metric
+        es_metric = metrics[early_stop_metric]
+        if es_metric > best_metric:
+            logger.info(f'New best metric {epi + 1}', dump = True)
+            if writer is not None:
+                writer.add_text('best metrics', msg, epi + 1)
+            best_metric = es_metric
+            if early_stop:
                 patience = 0
-                # save model
-                if output_dir is not None:
-                    torch.save(model.state_dict(), os.path.join(
-                        args['output_dir'], 'best_model.bin'))
-                    # overwrite old one
-            else:
+            # save model
+            if output_dir is not None:
+                torch.save(model.state_dict(), os.path.join(
+                    args['output_dir'], 'best_model.bin'))
+                # overwrite old one
+        else:
+            if early_stop:
                 patience += 1
                 if patience >= early_stop_patience:
                     logger.info(f'No improvement after {patience} epochs. Early stop')

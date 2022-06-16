@@ -65,7 +65,7 @@ def save_json_line(samples, path):
             f.write(json.dumps(sample, ensure_ascii = False) + '\n')
 
 
-# python
+# python dict
 def zip_dict(**kwargs) -> List[Dict]:
     """
     A dict-version zip function.
@@ -78,6 +78,24 @@ def zip_dict(**kwargs) -> List[Dict]:
     
     sample_list = [{col: kwargs[col][i] for col in col_name} for i in range(num_samples)]
     return sample_list
+
+def swap_dict_key(obj: dict, key_map: Dict[str, str]):
+    """
+    For a dict, change the key names in key_map with the new name.
+    """
+    new_obj = {}
+    for k,v in obj.items():
+        if k in key_map:
+            k = key_map[k]
+        new_obj[k] = v
+    return new_obj
+
+def slice_dict(obj:dict, keys: List[str]):
+    """
+    Retrieve a sub-dict with given keys
+    """
+    return {k:v for k,v in obj.items() if k in keys}
+
 
 # torch
 def to_cuda(data):
@@ -154,4 +172,31 @@ def obj_to_str(obj, **kwargs):
 def numerical_to_str(x: Union[int, float]):
     return f'{x:.5g}' if x > 0.001 and x < 1000 else f'{x:.3e}'
 
+
+# make dir
+def make_exp_dir(path_prefix, year = False):
+    """
+    Make a dir with timestamp. If conflicting, wait 30s and try again.
+    """
+    fail_count = 0
+    while True:
+        if fail_count >=3:
+            raise OSError('Path exists after three attempts')
         
+        out_path = path_prefix + '_' + get_timestamp(year)
+        if os.path.exists(out_path):
+            fail_count += 1
+            print('Path conflict. Sleep 30s ...')
+            time.sleep(30)
+        else:
+            os.makedirs(out_path, exist_ok = False)
+            return out_path
+
+
+# evaluation
+def torch_acc_logits(logits: torch.Tensor, label: torch.Tensor
+)->Tuple[torch.Tensor, torch.Tensor]:
+    preds = torch.argmax(logits, dim = -1)
+    acc = (preds == label).to(torch.float32).mean()
+
+    return acc, preds
