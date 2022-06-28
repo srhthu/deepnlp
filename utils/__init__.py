@@ -196,6 +196,9 @@ def make_exp_dir(path_prefix, year = False):
 # evaluation
 def torch_acc_logits(logits: torch.Tensor, label: torch.Tensor
 )->Tuple[torch.Tensor, torch.Tensor]:
+    """
+    Return: (acc, preds)
+    """
     preds = torch.argmax(logits, dim = -1)
     acc = (preds == label).to(torch.float32).mean()
 
