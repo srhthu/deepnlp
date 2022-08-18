@@ -120,7 +120,7 @@ def to_cuda(data):
 def to_numerical(data:Dict[str, Union[torch.Tensor, float]]):
     def _numerical(x):
         if isinstance(x, torch.Tensor):
-            x = x.detach()
+            x = x.detach().cpu()
             return x.item() if x.reshape(-1).shape[0] == 1 else x.numpy()
         else:
             return x
