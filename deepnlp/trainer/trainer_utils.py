@@ -8,8 +8,10 @@ import random
 from tokenize import Number
 import numpy as np
 import torch
+import dataclasses
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Union
+from collections import defaultdict
 
 def initialize_logger(name = __name__, log_path = None):
     logger = logging.getLogger(name)
@@ -101,6 +103,23 @@ class DictNumberAverager:
         ave_dict = {name: k.average(reset) for name, k in self.averagers.items()}
         return ave_dict
 
+class AccumulateTensors:
+    def __init__(self):
+        self._values = defaultdict(float)
+        self._count = 0
+    
+    def add(self, tensor_dt):
+        for name, tensor in tensor_dt.items():
+            if isinstance(tensor, torch.Tensor):
+                value = tensor.detach().cpu()
+                value = value.item() if value.reshape(-1).shape[0] == 1 else None
+            else:
+                value = None
+            if value is not None:
+                self._values[name] += value
+        self._count += 1
+    def get(self):
+        return {k:v / self._count for k,v in self._values.items()}
 
 def compute_accuracy_with_logits(all_logits, all_labels):
     """
@@ -147,3 +166,27 @@ def torch_data_collator(features: List[Dict[str, Any]]) -> Dict[str, Any]:
             else:
                 batch[k] = torch.tensor([f[k] for f in features])
     return batch
+
+class SimpleCollator:
+    """
+    Stack the features.
+    """
+    def __init__(self):
+        ...
+    
+    def __call__(features: List) -> Dict[str, Any]:
+        first = features[0]
+        batch = {}
+        for k,v in first.items():
+            if isinstance(v, torch.Tensor):
+                batch[k] = torch.stack([f[k] for f in features])
+            elif not isinstance(v, str):
+                batch[k] = torch.tensor(np.array([f[k] for f in features]))
+
+        return batch
+    
+def save_dataclass_to_json(obj, json_path: str):
+    """Save the content of this instance in JSON format inside `json_path`."""
+    json_string = json.dumps(dataclasses.asdict(obj), indent=2, sort_keys=True) + "\n"
+    with open(json_path, "w", encoding="utf-8") as f:
+        f.write(json_string)

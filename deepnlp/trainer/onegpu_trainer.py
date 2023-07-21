@@ -41,10 +41,11 @@ class TrainingArgs:
     General arguments for a trainer
     """
     batch_size: int = 16
-    device_batch_size: Optional[int] = None
+    device_batch_size: int = None
     eval_batch_size: Optional[int] = None
 
     num_epoch: int = 3
+    max_steps: Optional[int] = None
     logging_steps: int = 10
     eval_steps: Union[int, float] = -1
     early_stop: Optional[bool] = None
@@ -58,6 +59,14 @@ class TrainingArgs:
     lr: float = 1e-5
     scheduler_type: Optional[str] = None
 
+    @property
+    def train_batch_size(self) -> int:
+        return self.device_batch_size * self.n_gpu
+    
+    @property
+    def n_gpu(self):
+        # do not use nn.DataParallel
+        return 1
 
 class OneGPUTrainer:
     """
