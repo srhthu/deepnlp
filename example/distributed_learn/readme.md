@@ -65,3 +65,4 @@ Some functions:
 
 See demos in `start.py`
 
+As noted in `ddp_tutorial`, "The collective communication functions, e.g., all_reduce, serve as a synchronization.". Which means that after calling these functions all progresses are synchronized.

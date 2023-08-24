@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 import torch
 import torch.nn as nn
 import torch.distributed as dist
@@ -35,6 +36,7 @@ def demo_all_reduce():
 def demo_reduce():
     if local_rank == 0:
         print('Example of reduce')
+        # time.sleep(5) # sleep do not cause errors
     tensor = torch.Tensor([rank]).cuda(local_rank)
     print(f'Before reduce: Rank {rank} {tensor}')
     dist.reduce(tensor, 0) # all workers should report the tensor to worker_0
@@ -74,9 +76,9 @@ def demo_gather():
     if local_rank == 0:
         print('='*30)
 
-demo_all_reduce()
+# demo_all_reduce()
 demo_reduce()
-demo_all_gather()
+# demo_all_gather()
 demo_gather()
 """
 torchrun --nproc_per_node=2  start.py
