@@ -3,8 +3,8 @@
 We introduce how to start a distributed training and the configuration process.
 ### Lunch
 The multiple processes are lunched with related variables, e.g., local rank, which are passed through two ways:  
-- `torch.distributed.launch` pass variables through command line arguments
-- `torchrun` pass through environment variables
+- `torch.distributed.launch` pass variables through **command line arguments**
+- `torchrun` pass through **environment variables**
 
 These variables related to mp are (part):
 - `LOCAL_RANK` - The local rank
