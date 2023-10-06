@@ -1,16 +1,26 @@
 import torch
 from accelerate import Accelerator
 from transformers import Trainer
-
+import os
+import time
 from tqdm import tqdm
 from prepare import get_model_optimizer_dataloader
 
 def main():
     max_step = 1
     # get Bert model and a text classification dataset
+    accelerator = Accelerator()
+    print('start sleep')
+    time.sleep(5)
+    if accelerator.is_main_process:
+        for k,v in os.environ.items():
+            if k.lower().startswith('ACCELERATE'.lower()):
+                print(f'{k}={v}')
+    return
+
     model, optimizer, training_dataloader = get_model_optimizer_dataloader()
     scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lambda k: 1.0)
-    accelerator = Accelerator()
+    
 
     def log(txt):
         print(f'Local rank {accelerator.process_index}: {txt}')

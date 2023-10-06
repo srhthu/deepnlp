@@ -12,6 +12,11 @@ accelerate launch --multi_gpu --mixed_precision=fp16 --num_processes=2 {script_n
 accelerate launch --config_file {yaml_file_path} {script_name.py}
 ```
 
+launch `train_demo.py`
+```
+accelerate launch --config_file config/ds.yaml --num_processes=2 train_demo.py
+```
+
 ## Some Changes
 ### get the model state dict
 Run `test_get_stat.py` to show the model parameters
