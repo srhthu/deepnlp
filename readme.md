@@ -94,3 +94,19 @@ which returns a `List[dict]` dataset and can only read first `n_lines` during de
 
 ## data
 `data` implements a torch Dataset class `UniversalDataset` supporting multiple types of input (list or dict samples).
+
+# Test
+## Trainer
+To test the accelerate based trainer,
+```
+# for single gpu
+python -m tests.test_acc_trainer
+
+# launch with torchrun
+torchrun --nproc-per-node=2 -m tests.test_acc_trainer
+
+# launch with accelerate
+accelerate launch --num_processes=2 -m tests.test_acc_trainer
+```
+Several settings to test:
+- to test stopping on max_steps: `batch_size=16, device_batch_size=8, 2gpu, samples=100, max_steps=50, logging_steps=2`
