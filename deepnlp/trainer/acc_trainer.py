@@ -348,20 +348,26 @@ class AccTrainer:
                     # step end
                     self.global_step += 1
                     training_bar.update(1)
+                else:
+                    # [Fix Bug] accelerator handle gradient accumulation, 
+                    # we should call optimizer.step() at ever micro step.
+                    optimizer.step()
+                    if scheduler:
+                        scheduler.step()
                     
-                    if self.global_step % config.logging_steps == 0:
-                        # logging
-                        tr_logs = tr_metrics.average()
-                        tr_logs['step'] = self.global_step
-                        tr_logs['epoch'] = epoch + step / len(train_dl)
-                        self.log(tr_logs, tqdm_bar = training_bar)
-                    
-                    if eval_steps and (self.global_step % eval_steps == 0):
-                        # evaluate
-                        self.do_evaluate()
-                    
-                    if self.es_helper.should_stop or self.global_step >= max_steps:
-                        break
+                if self.global_step % config.logging_steps == 0:
+                    # logging
+                    tr_logs = tr_metrics.average()
+                    tr_logs['step'] = self.global_step
+                    tr_logs['epoch'] = epoch + step / len(train_dl)
+                    self.log(tr_logs, tqdm_bar = training_bar)
+                
+                if eval_steps and (self.global_step % eval_steps == 0):
+                    # evaluate
+                    self.do_evaluate()
+                
+                if self.es_helper.should_stop or self.global_step >= max_steps:
+                    break
 
             # epoch end
             if self.es_helper.should_stop or self.global_step >= max_steps:
