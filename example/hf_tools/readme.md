@@ -15,5 +15,8 @@ Change file attribute to disable deletion of any files
 chattr -R +a /next_share/hf_cache/hub/*
 # do not change the attribute of the hub directory, 
 # as some temporary files may be created during downloading.
+
+# Allow change attributes of the ref/main file
+chattr -R -a /next_share/hf_cache/hub/*/refs/main
 ```
 
