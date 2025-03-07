@@ -20,3 +20,10 @@ chattr -R +a /next_share/hf_cache/hub/*
 chattr -R -a /next_share/hf_cache/hub/*/refs/main
 ```
 
+## Clear Unused Files
+
+Motivation: a repository may save several copies of weights in different formats. However, the transformers package need only one piece of weights to build models.
+
+If weights are downloaded by `snapshot_download`, the whole repository will be downlaoded.
+
+If weights are downloaded when calling `from_pretrained` of `PreTrainedModel`, only used weights will be downloaded.
